@@ -5,10 +5,20 @@ import * as party from "party-js";
 
 function App() {
 
-  const cookie = document.createElement('span');
-  cookie.innerText = '🪙';
-  cookie.style.fontSize = '24px';
+  party.resolvableShapes["coin"] = `<img style="width: 20px;" src="nyakoin.png"/>`;
 
+  const upgradeList = [
+    {
+      upgrade: 'Double',
+      cost: 20,
+      description: 'Double the amount of Nyakoin you get per click'
+    },
+    {
+      upgrade: 'Auto',
+      cost: 100,
+      description: 'Automatically get 1 Nyakoin per second'
+    }
+  ]
 
   const [count, setCount] = useState(() => {
     const count = localStorage.getItem('count');
@@ -49,10 +59,6 @@ function App() {
       const autoUpgrade = upgrades.find(upgrade => upgrade.upgrade === 'Auto');
       if (autoUpgrade) {
         setCount(count + autoUpgrade.amount);
-        party.confetti(this, {
-          count: party.variation.range(1, 1),
-          shapes: cookie
-        });
       }
     }, 1000);
     return () => clearInterval(interval);
@@ -69,39 +75,63 @@ function App() {
         <div onClick={
           (event) => {
             // increase based on amount
-            setCount(count + 1 + upgrades.reduce((acc, upgrade) => acc + upgrade.amount, 0));
+            const amt = 1 * (upgrades.find(upgrade => upgrade.upgrade === 'Double') ?? {amount: 0}).amount + 1;
+            setCount(count + amt);
             party.confetti(event.target, {
-              count: party.variation.range(1, 1),
-              shapes: cookie
+              count: party.variation.range(Math.min(amt, 25), Math.min(amt, 25)),
+              shapes: ["coin"]
             });
           }
         }>
           <img src={logo} className="logo" alt="Nyakoin Logo" />
         </div>
+        <div className="upgradelist">
         {
-          (count >= 20) && (
-            <button onClick={
-              () => {
-                setCount(count - 20);
-                increaseUpgrade('Double');
-              }
-            }>
-              Double Nyakoin
-            </button>
-          )
+          /* filter for what you can buy */
+          upgradeList.filter(upgrade => count >= upgrade.cost).map((upgrade, index) => {
+            return (
+              <div className="upgrade" key={index}>
+                <h2>{upgrade.upgrade}</h2>
+                <p>{upgrade.description}</p>
+                <p>Cost: {upgrade.cost}</p>
+                <p>Owned: {upgrades.find(upg => upg.upgrade === upgrade.upgrade)?.amount ?? 0}</p>
+                <div className="upgrade-buttons">
+                <button onClick={
+                  () => {
+                    setCount(count - upgrade.cost);
+                    increaseUpgrade(upgrade.upgrade);
+                  }
+                }>
+                  Buy
+                </button>
+                {
+                  (count >= (upgrade.cost * 10)) && <button onClick={
+                    () => {
+                      setCount(count - upgrade.cost * 10);
+                      for (let i = 0; i < 10; i++)
+                        increaseUpgrade(upgrade.upgrade);
+                    }
+                  }>
+                    Buy 10
+                  </button>
+                }
+                {
+                  (count >= (upgrade.cost * 100)) && <button onClick={
+                    () => {
+                      setCount(count - upgrade.cost * 100);
+                      for (let i = 0; i < 100; i++)
+                        increaseUpgrade(upgrade.upgrade);
+                    }
+                  }>
+                    Buy 100
+                  </button>
+                }
+                </div>
+              </div>
+            )
+          })
         }
-        {
-          (count >= 100) && (
-            <button onClick={
-              () => {
-                setCount(count - 100);
-                increaseUpgrade('Auto');
-              }
-            }>
-              +1 Nyakoin per second
-            </button>
-          )
-        }
+        </div>
       </div>
     </>
   )
