@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useCallback, useState, useEffect } from 'react'
 import logo from './assets/nyakoin.png'
 import './App.css'
 import * as party from "party-js";
+import { abbreviateNumber } from "js-abbreviation-number";
 
 function App() {
 
@@ -10,13 +11,21 @@ function App() {
   const upgradeList = [
     {
       upgrade: 'Double',
+      name: 'Increase',
       cost: 20,
-      description: 'Double the amount of Nyakoin you get per click'
+      description: 'Increase the amount of Nyakoin you get per click'
     },
     {
       upgrade: 'Auto',
+      name: 'Auto',
       cost: 100,
       description: 'Automatically get 1 Nyakoin per second'
+    },
+    {
+      upgrade: 'DoubleAuto',
+      name: 'Auto Increase',
+      cost: 1000,
+      description: 'Increase the amount of Nyakoin you get per second'
     }
   ]
 
@@ -42,40 +51,58 @@ function App() {
     localStorage.setItem('upgrades', JSON.stringify(upgrades));
   }, [upgrades]);
 
-  const increaseUpgrade = (upgradeName) => {
+  const increaseUpgrade = (upgradeName, amount = 1) => {
     const newUpgrades = [...upgrades];
     // Ok, if we don't have any already, just add it to the end with an amount of 1
     const upgrade = newUpgrades.find(upgrade => upgrade.upgrade === upgradeName);
     if (upgrade) {
-      upgrade.amount++;
+      upgrade.amount += amount;
     } else {
-      newUpgrades.push({ upgrade: upgradeName, amount: 1 });
+      newUpgrades.push({ upgrade: upgradeName, amount: amount });
     }
     setUpgrades(newUpgrades);
   }
+
+  
+  const getUpgradeAmount = useCallback((upgradeName) => {
+    const upgrade = upgrades.find(upgrade => upgrade.upgrade === upgradeName);
+    return upgrade ? upgrade.amount : 0;
+  }, [upgrades]);
 
   useEffect(() => {
     const interval = setInterval(() => {
       const autoUpgrade = upgrades.find(upgrade => upgrade.upgrade === 'Auto');
       if (autoUpgrade) {
-        setCount(count + autoUpgrade.amount);
+        setCount(count + autoUpgrade.amount * (getUpgradeAmount('DoubleAuto') + 1));
       }
     }, 1000);
     return () => clearInterval(interval);
   }
-  , [count, upgrades]);
+  , [count, upgrades, getUpgradeAmount]);
+
+  const buyUpgrade = (upgradeName, amount = 1) => {
+    const upgrade = upgradeList.find(upgrade => upgrade.upgrade === upgradeName);
+    if (upgrade && count >= upgrade.cost * amount) {
+      setCount(count - upgrade.cost * amount);
+      increaseUpgrade(upgradeName, amount);
+    }
+  }
+
+  const abbrMoney = (amt, dec = 1) => {
+    return abbreviateNumber(amt, dec, {symbols: ["", "k", "m", "b", "t", "q", "Q", "s", "S", "o", "n", "d", "U", "D", "T", "Qt", "Qd"]});
+  }
 
   return (
     <>
       <h1>Nyakoin Miner</h1>
       <p>
-        NYAKOIN MINED: {count}
+        NYAKOIN MINED: {abbrMoney(count)}
       </p>
       <div>
         <div onClick={
           (event) => {
             // increase based on amount
-            const amt = 1 * (upgrades.find(upgrade => upgrade.upgrade === 'Double') ?? {amount: 0}).amount + 1;
+            const amt = getUpgradeAmount('Double') + 1;
             setCount(count + amt);
             party.confetti(event.target, {
               count: party.variation.range(Math.min(amt, 10), Math.min(amt, 10)),
@@ -91,40 +118,20 @@ function App() {
           upgradeList.filter(upgrade => count >= upgrade.cost).map((upgrade, index) => {
             return (
               <div className="upgrade" key={index}>
-                <h2>{upgrade.upgrade}</h2>
+                <h2>{upgrade.name}</h2>
                 <p>{upgrade.description}</p>
                 <p>Cost: {upgrade.cost}</p>
                 <p>Owned: {upgrades.find(upg => upg.upgrade === upgrade.upgrade)?.amount ?? 0}</p>
                 <div className="upgrade-buttons">
-                <button onClick={
-                  () => {
-                    setCount(count - upgrade.cost);
-                    increaseUpgrade(upgrade.upgrade);
-                  }
-                }>
-                  Buy
-                </button>
-                {
-                  (count >= (upgrade.cost * 10)) && <button onClick={
-                    () => {
-                      setCount(count - upgrade.cost * 10);
-                      for (let i = 0; i < 10; i++)
-                        increaseUpgrade(upgrade.upgrade);
-                    }
-                  }>
-                    Buy 10
-                  </button>
-                }
-                {
-                  (count >= (upgrade.cost * 100)) && <button onClick={
-                    () => {
-                      setCount(count - upgrade.cost * 100);
-                      for (let i = 0; i < 100; i++)
-                        increaseUpgrade(upgrade.upgrade);
-                    }
-                  }>
-                    Buy 100
-                  </button>
+                  {[1, 10, 100, 1000, 10000, 100000, 1000000, 10000000].map((num) => {
+                    return (count >= (upgrade.cost * num)) && <button key={num} onClick={
+                      () => {
+                          buyUpgrade(upgrade.upgrade, num);
+                        }
+                      }>
+                      Buy {abbrMoney(num, 0)}
+                    </button>
+                  })
                 }
                 </div>
               </div>
