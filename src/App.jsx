@@ -78,7 +78,7 @@ function App() {
             const amt = 1 * (upgrades.find(upgrade => upgrade.upgrade === 'Double') ?? {amount: 0}).amount + 1;
             setCount(count + amt);
             party.confetti(event.target, {
-              count: party.variation.range(Math.min(amt, 25), Math.min(amt, 25)),
+              count: party.variation.range(Math.min(amt, 10), Math.min(amt, 10)),
               shapes: ["coin"]
             });
           }
