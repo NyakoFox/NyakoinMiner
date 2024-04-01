@@ -35,7 +35,7 @@ function App() {
             });
           }
         }>
-          <img src={logo} className="logo" alt="Vite logo" />
+          <img src={logo} className="logo" alt="Nyakoin Logo" />
         </div>
       </div>
     </>
