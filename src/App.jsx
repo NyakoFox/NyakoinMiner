@@ -98,7 +98,14 @@ function App() {
     if (largeNumbers) {
       return amt;
     }
-    return abbreviateNumber(amt, dec, {symbols: ["", "k", "m", "b", "t", "q", "Q", "s", "S", "o", "n", "d", "U", "D", "T", "Qt", "Qd"]});
+    try
+    {
+      return abbreviateNumber(amt, dec, {symbols: ["", "k", "m", "b", "t", "q", "Q", "s", "S", "o", "n", "d", "U", "D", "T", "Qt", "Qd"]});
+    }
+    catch (e)
+    {
+      return amt;
+    }
   }
 
   const [largeNumbers, setLargeNumbers] = useState(() => {
@@ -141,7 +148,7 @@ function App() {
                   <p>Cost: {upgrade.cost}</p>
                   <p>Owned: {upgrades.find(upg => upg.upgrade === upgrade.upgrade)?.amount ?? 0}</p>
                   <div className="upgrade-buttons">
-                    {[1, 10, 100, 1000, 10000, 100000, 1000000, 10000000].map((num) => {
+                    {[1, 10, 100, 1000, 10000, 100000, 1000000].map((num) => {
                       return (count >= (upgrade.cost * num)) && <button key={num} onClick={
                         () => {
                             buyUpgrade(upgrade.upgrade, num);
@@ -151,6 +158,13 @@ function App() {
                       </button>
                     })
                   }
+                    <button onClick={
+                      () => {
+                          buyUpgrade(upgrade.upgrade, Math.floor(count / upgrade.cost));
+                        }
+                      }>
+                      Buy Max
+                    </button>
                   </div>
                 </div>
               )
