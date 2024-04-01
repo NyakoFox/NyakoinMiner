@@ -15,9 +15,30 @@ function App() {
     return count ? parseInt(count) : 0;
   });
 
+  const [upgrades, setUpgrades] = useState(() => {
+    const upgrades = localStorage.getItem('upgrades');
+    return upgrades ? JSON.parse(upgrades) : [];
+  });
+
   useEffect(() => {
     localStorage.setItem('count', count);
   }, [count]);
+
+  useEffect(() => {
+    localStorage.setItem('upgrades', JSON.stringify(upgrades));
+  }, [upgrades]);
+
+  const increaseUpgrade = (upgradeName) => {
+    const newUpgrades = [...upgrades];
+    // Ok, if we don't have any already, just add it to the end with an amount of 1
+    const upgrade = newUpgrades.find(upgrade => upgrade.upgrade === upgradeName);
+    if (upgrade) {
+      upgrade.amount++;
+    } else {
+      newUpgrades.push({ upgrade: upgradeName, amount: 1 });
+    }
+    setUpgrades(newUpgrades);
+  }
 
   return (
     <>
@@ -26,9 +47,10 @@ function App() {
         NYAKOIN MINED: {count}
       </p>
       <div>
-        <div href="https://vitejs.dev" target="_blank" onClick={
+        <div onClick={
           (event) => {
-            setCount(count + 1);
+            // increase based on amount
+            setCount(count + 1 * ( (upgrades.find(upgrade => upgrade.upgrade === 'Double')) ?? [] ).amount);
             party.confetti(event.target, {
               count: party.variation.range(1, 1),
               shapes: cookie
@@ -37,6 +59,18 @@ function App() {
         }>
           <img src={logo} className="logo" alt="Nyakoin Logo" />
         </div>
+        {
+          (count >= 20) && (
+            <button onClick={
+              () => {
+                setCount(count - 20);
+                increaseUpgrade('Double');
+              }
+            }>
+              Double Nyakoin
+            </button>
+          )
+        }
       </div>
     </>
   )
