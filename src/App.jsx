@@ -12,6 +12,10 @@ function App() {
 
   const [count, setCount] = useState(() => {
     const count = localStorage.getItem('count');
+    // make sure its not NAN
+    if (isNaN(count)) {
+      return 0;
+    }
     return count ? parseInt(count) : 0;
   });
 
@@ -40,6 +44,21 @@ function App() {
     setUpgrades(newUpgrades);
   }
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const autoUpgrade = upgrades.find(upgrade => upgrade.upgrade === 'Auto');
+      if (autoUpgrade) {
+        setCount(count + autoUpgrade.amount);
+        party.confetti(this, {
+          count: party.variation.range(1, 1),
+          shapes: cookie
+        });
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }
+  , [count, upgrades]);
+
   return (
     <>
       <h1>Nyakoin Miner</h1>
@@ -50,7 +69,7 @@ function App() {
         <div onClick={
           (event) => {
             // increase based on amount
-            setCount(count + 1 * ( (upgrades.find(upgrade => upgrade.upgrade === 'Double')) ?? [] ).amount);
+            setCount(count + 1 + upgrades.reduce((acc, upgrade) => acc + upgrade.amount, 0));
             party.confetti(event.target, {
               count: party.variation.range(1, 1),
               shapes: cookie
@@ -68,6 +87,18 @@ function App() {
               }
             }>
               Double Nyakoin
+            </button>
+          )
+        }
+        {
+          (count >= 100) && (
+            <button onClick={
+              () => {
+                setCount(count - 100);
+                increaseUpgrade('Auto');
+              }
+            }>
+              +1 Nyakoin per second
             </button>
           )
         }
